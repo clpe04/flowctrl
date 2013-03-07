@@ -54,46 +54,53 @@
               {:segment :UNZ :name :UNZ :keys [:na1 :na2]}))
 
 (def mscons-format
-  (format-group
-   (format-line :UNA :UNA [:na1 :na2])
-   (format-line :UNB :UNB [:na1 :na2 :na3 :na4 :na5 :na6 :na7 :na8 :na9 :na10 :na11 :na12 :na13 :na14])
-   (format-nesting :UNH :messages :UNZ
-                   (format-group
-                    (format-line :UNH :message [:message-reference :message-type :unknown1 :unknown2 :unknown3 :version :business-transaction])
-                    (format-line :BGM :BGM [:document-type :na :organisation-code :message-id :original :ack])
-                    (format-line :DTM :message-date [:type :timestamp :format])
-                    (format-line :DTM :processing-date1 [:type :timestamp :format])
-                    (format-line :DTM :processing-date2 [:type :timestamp :format])
-                    (format-line :DTM :message-timezone [:type :deviation :format])
-                    (format-line :NAD :recipient [:type :id :na :id-type])
-                    (format-line :NAD :sender [:type :id :na :id-type])
-                    (format-line :UNS :UNS [:na])
-                    (format-line :NAD :NAD [:na])
-                    (format-line :LOC :metering-point [:type :id :na :type-code])
-                    (format-nesting :LIN :products :CNT
-                                    (format-group
-                                     (format-line :LIN :product [:line-no :na :code :na1 :na2 :org-code])
-                                     (format-line :MEA :measure [:type :na :unit])
-                                     (format-line :CUX :currency [:qualifier :type])
-                                     (format-line :QTY :quantity [:type :amount])
-                                     (format-line :DTM :reading-time [:type :timestamp :format])
-                                     (format-line :CCI :reason-code [:na1 :na2 :type])
-                                     (format-line :MEA :reason [:na1 :na2 :na3 :code])))
-                    (format-line :CNT :CNT [:type :sum])
-                    (format-line :UNT :message-end [:number-og-segments :ref-no])))
-   (format-line :UNZ :UNZ [:na1 :na2])))
+  (create-format
+   [:UNA :UNA [:na1 :na2]]
+   [:UNB :UNB [:na1 :na2 :na3 :na4 :na5 :na6 :na7 :na8 :na9 :na10 :na11 :na12 :na13 :na14]]
+   [:UNH :messages :UNZ
+    [:UNH :message [:message-reference :message-type :unknown1 :unknown2 :unknown3 :version :business-transaction]]
+    [:BGM :BGM [:document-type :na :organisation-code :message-id :original :ack]]
+    [:DTM :message-date [:type :timestamp :format]]
+    [:DTM :processing-date1 [:type :timestamp :format]]
+    [:DTM :processing-date2 [:type :timestamp :format]]
+    [:DTM :message-timezone [:type :deviation :format]]
+    [:NAD :recipient [:type :id :na :id-type]]
+    [:NAD :sender [:type :id :na :id-type]]
+    [:UNS :UNS [:na]]
+    [:NAD :NAD [:na]]
+    [:LOC :metering-point [:type :id :na :type-code]]
+    [:LIN :products :CNT
+     [:LIN :product [:line-no :na :code :na1 :na2 :org-code]]
+     [:MEA :measure [:type :na :unit]]
+     [:CUX :currency [:qualifier :type]]
+     [:QTY :quantity [:type :amount]]
+     [:DTM :reading-time [:type :timestamp :format]]
+     [:CCI :reason-code [:na1 :na2 :type]]
+     [:MEA :reason [:na1 :na2 :na3 :code]]]
+    [:CNT :CNT [:type :sum]]
+    [:UNT :message-end [:number-og-segments :ref-no]]]
+   [:UNZ :UNZ [:na1 :na2]]))
 
 (defn format-line
   [segment name keys]
   (hash-map :segment segment :name name :keys keys))
 
-(defn format-group
-  [& formats]
-  formats)
-
 (defn format-nesting
   [segment name end-segment format-group]
   (hash-map :segment segment :name name :end-segment end-segment :nesting format-group))
+
+(defn create-format
+  [& format-lines]
+  (loop [result []
+         lines format-lines]
+    (let [line (first lines)]
+      (cond
+       (empty? lines) result
+       (= 3 (count line)) (recur (conj result (apply format-line line)) (rest lines))
+       :else (recur (conj result (let [[segment name end-segment & flines] line]
+                                   (format-nesting segment name end-segment
+                                                   (apply create-format flines))))
+                    (rest lines))))))
                     
 (defn end-parse?
   [lines end-segment]
