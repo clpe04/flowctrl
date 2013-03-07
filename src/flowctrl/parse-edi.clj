@@ -52,6 +52,48 @@
                   {:segment :NAD :name :balance-supplier :keys [:type :id :na :type-code]})}
                 {:segment :UNT :name :message-end :keys [:number-og-segments :ref-no]})}
               {:segment :UNZ :name :UNZ :keys [:na1 :na2]}))
+
+(def mscons-format
+  (format-group
+   (format-line :UNA :UNA [:na1 :na2])
+   (format-line :UNB :UNB [:na1 :na2 :na3 :na4 :na5 :na6 :na7 :na8 :na9 :na10 :na11 :na12 :na13 :na14])
+   (format-nesting :UNH :messages :UNZ
+                   (format-group
+                    (format-line :UNH :message [:message-reference :message-type :unknown1 :unknown2 :unknown3 :version :business-transaction])
+                    (format-line :BGM :BGM [:document-type :na :organisation-code :message-id :original :ack])
+                    (format-line :DTM :message-date [:type :timestamp :format])
+                    (format-line :DTM :processing-date1 [:type :timestamp :format])
+                    (format-line :DTM :processing-date2 [:type :timestamp :format])
+                    (format-line :DTM :message-timezone [:type :deviation :format])
+                    (format-line :NAD :recipient [:type :id :na :id-type])
+                    (format-line :NAD :sender [:type :id :na :id-type])
+                    (format-line :UNS :UNS [:na])
+                    (format-line :NAD :NAD [:na])
+                    (format-line :LOC :metering-point [:type :id :na :type-code])
+                    (format-nesting :LIN :products :CNT
+                                    (format-group
+                                     (format-line :LIN :product [:line-no :na :code :na1 :na2 :org-code])
+                                     (format-line :MEA :measure [:type :na :unit])
+                                     (format-line :CUX :currency [:qualifier :type])
+                                     (format-line :QTY :quantity [:type :amount])
+                                     (format-line :DTM :reading-time [:type :timestamp :format])
+                                     (format-line :CCI :reason-code [:na1 :na2 :type])
+                                     (format-line :MEA :reason [:na1 :na2 :na3 :code])))
+                    (format-line :CNT :CNT [:type :sum])
+                    (format-line :UNT :message-end [:number-og-segments :ref-no])))
+   (format-line :UNZ :UNZ [:na1 :na2])))
+
+(defn format-line
+  [segment name keys]
+  (hash-map :segment segment :name name :keys keys))
+
+(defn format-group
+  [& formats]
+  formats)
+
+(defn format-nesting
+  [segment name end-segment format-group]
+  (hash-map :segment segment :name name :end-segment end-segment :nesting format-group))
                     
 (defn end-parse?
   [lines end-segment]
@@ -69,7 +111,7 @@
   [collection line format-line]
   (assoc collection (:name format-line) (zipmap (:keys format-line) (:data line))))
 
-(defn parse-by-format
+(defn- parse
   [data format end-segment]
   (loop [lines data
          format-lines format
@@ -79,7 +121,7 @@
           f (first format-lines)]
       (cond
        (end-parse? lines end-segment) (create-result lines (conj result temp))
-       (start-nesting? line f) (let [rs (parse-by-format lines (:nesting f)
+       (start-nesting? line f) (let [rs (parse lines (:nesting f)
                                                          (:end-segment f))]
                                  (recur (:lines rs) (rest format-lines) result
                                         (assoc temp (:name f) (:result rs))))
@@ -88,3 +130,7 @@
                                             result
                                             (add-element temp line f))
        :else (recur lines (rest format-lines) result temp)))))
+
+(defn parse-by-format
+  [data format]
+  (first (:result (parse data format nil))))
