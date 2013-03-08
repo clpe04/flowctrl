@@ -53,6 +53,27 @@
                 {:segment :UNT :name :message-end :keys [:number-og-segments :ref-no]})}
               {:segment :UNZ :name :UNZ :keys [:na1 :na2]}))
 
+(defn format-line
+  [segment name keys]
+  (hash-map :segment segment :name name :keys keys))
+
+(defn format-nesting
+  [segment name end-segment format-group]
+  (hash-map :segment segment :name name :end-segment end-segment :nesting format-group))
+
+(defn create-format
+  [& format-lines]
+  (loop [result []
+         lines format-lines]
+    (let [line (first lines)]
+      (cond
+       (empty? lines) result
+       (= 3 (count line)) (recur (conj result (apply format-line line)) (rest lines))
+       :else (recur (conj result (let [[segment name end-segment & flines] line]
+                                   (format-nesting segment name end-segment
+                                                   (apply create-format flines))))
+                    (rest lines))))))
+
 (def mscons-format
   (create-format
    [:UNA :UNA [:na1 :na2]]
@@ -81,27 +102,6 @@
     [:UNT :message-end [:number-og-segments :ref-no]]]
    [:UNZ :UNZ [:na1 :na2]]))
 
-(defn format-line
-  [segment name keys]
-  (hash-map :segment segment :name name :keys keys))
-
-(defn format-nesting
-  [segment name end-segment format-group]
-  (hash-map :segment segment :name name :end-segment end-segment :nesting format-group))
-
-(defn create-format
-  [& format-lines]
-  (loop [result []
-         lines format-lines]
-    (let [line (first lines)]
-      (cond
-       (empty? lines) result
-       (= 3 (count line)) (recur (conj result (apply format-line line)) (rest lines))
-       :else (recur (conj result (let [[segment name end-segment & flines] line]
-                                   (format-nesting segment name end-segment
-                                                   (apply create-format flines))))
-                    (rest lines))))))
-                    
 (defn end-parse?
   [lines end-segment]
   (or (empty? lines) (= (:name (first lines)) end-segment)))
