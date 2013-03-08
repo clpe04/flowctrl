@@ -23,36 +23,26 @@
 
 (def utilmd-end "UNA:+.? 'UNB+UNOC:3+5790001687137:14+5790000705689:14+091109:0126+26710++DK-CUS+++DK'UNH+26710+UTILMD:D:02B:UN:E5DK02+DK-BT-003-002'BGM+432+2449+9+NA'DTM+137:200911090122:203'DTM+735:?+0000:406'MKS+23+E01::260'NAD+MR+5790000705689::9'NAD+MS+5790001687137::9'IDE+24+2449'DTM+93:200911302300:203'STS+7++E20::260'LOC+172+571313174115162192::9'UNT+12+26710'UNZ+1+26710'")
 
-(def utilmd-format '({:segment :UNA :name :UNA :keys [:na1 :na2]}
-              {:segment :UNB :name :UNB :keys [:na1 :na2 :na3 :na4 :na5 :na6 :na7 :na8 :na9 :na10 :na11 :na12 :na13 :na14]}
-              {:segment :UNH :name :messages :end-segment :UNZ :nesting
-               ({:segment :UNH :name :message :keys [:message-reference :message-type :unknown1 :unknown2 :unknown3 :version :business-transaction]}
-                {:segment :BGM :name :BGM :keys [:document-type :na :organisation-code :message-id :original :ack]}
-                {:segment :DTM :name :message-date :keys [:type :timestamp :format]}
-                {:segment :DTM :name :message-timezone :keys [:type :deviation :format]}
-                {:segment :MKS :name :market :keys [:type :na1 :na2 :org-code]}
-                {:segment :NAD :name :recipient :keys [:type :id :na :id-type]}
-                {:segment :NAD :name :sender :keys [:type :id :na :id-type]}
-                {:segment :IDE :name :transactions :end-segment :UNT :nesting
-                 ({:segment :IDE :name :transaction :keys [:type :id]}
-                  {:segment :DTM :name :contract-date :keys [:type :timestamp :format]}
-                  {:segment :DTM :name :validity-date :keys [:type :timestamp :format]}
-                  {:segment :DTM :name :reading-date :keys [:type :timestamp :format]}
-                  {:segment :STS :name :reason :keys [:type :code :org-code :org-group]}
-                  {:segment :LOC :name :installation :keys [:type :na :id :id-type]}
-                  {:segment :RFF :name :reference :keys [:type :id]}
-                  {:segment :CCI :name :method-code :keys [:na1 :na2 :settlement :na3 :org-code]}
-                  {:segment :CAV :name :method :keys [:type :na :org-code]}
-                  {:segment :CCI :name :status-code :keys [:na1 :na2 :physical :na3 :org-code]}
-                  {:segment :CAV :name :status :keys [:type :na :org-code]}
-                  {:segment :SEQ :name :SEQ :keys [:na :reg-no]}
-                  {:segment :QTY :name :estimated-value :keys [:type :quantity :measure]}
-                  {:segment :NAD :name :balance-responsible :keys [:org :id :na :type-code]}
-                  {:segment :NAD :name :metering-point :keys [:type :na1 :na2 :na3 :street-name1 :street-name2 :house-number :coded-address :city :na4 :zip-code :country]}
-                  {:segment :NAD :name :consumer :keys [:type :na1 :na2 :name :name2]}
-                  {:segment :NAD :name :balance-supplier :keys [:type :id :na :type-code]})}
-                {:segment :UNT :name :message-end :keys [:number-og-segments :ref-no]})}
-              {:segment :UNZ :name :UNZ :keys [:na1 :na2]}))
+(defn format-line
+  [segment name keys]
+  (hash-map :segment segment :name name :keys keys))
+
+(defn format-nesting
+  [segment name end-segment format-group]
+  (hash-map :segment segment :name name :end-segment end-segment :nesting format-group))
+
+(defn create-format
+  [& format-lines]
+  (loop [result []
+         lines format-lines]
+    (let [line (first lines)]
+      (cond
+       (empty? lines) result
+       (= 3 (count line)) (recur (conj result (apply format-line line)) (rest lines))
+       :else (recur (conj result (let [[segment name end-segment & flines] line]
+                                   (format-nesting segment name end-segment
+                                                   (apply create-format flines))))
+                    (rest lines))))))
 
 (defn format-line
   [segment name keys]
@@ -74,6 +64,39 @@
                                    (format-nesting segment name end-segment
                                                    (apply create-format flines))))
                     (rest lines))))))
+
+(def utilmd-format
+  (create-format
+   [:UNA :UNA [:na1 :na2]]
+   [:UNB :UNB [:na1 :na2 :na3 :na4 :na5 :na6 :na7 :na8 :na9 :na10 :na11 :na12 :na13 :na14]]
+   [:UNH :messages :UNZ 
+    [:UNH :message [:message-reference :message-type :unknown1 :unknown2 :unknown3 :version :business-transaction]]
+    [:BGM :BGM [:document-type :na :organisation-code :message-id :original :ack]]
+    [:DTM :message-date [:type :timestamp :format]]
+    [:DTM :message-timezone [:type :deviation :format]]
+    [:MKS :market [:type :na1 :na2 :org-code]]
+    [:NAD :recipient [:type :id :na :id-type]]
+    [:NAD :sender [:type :id :na :id-type]]
+    [:IDE :transactions :UNT
+     [:IDE :transaction [:type :id]]
+     [:DTM :contract-date [:type :timestamp :format]]
+     [:DTM :validity-date [:type :timestamp :format]]
+     [:DTM :reading-date [:type :timestamp :format]]
+     [:STS :reason [:type :code :org-code :org-group]]
+     [:LOC :installation [:type :na :id :id-type]]
+     [:RFF :reference [:type :id]]
+     [:CCI :method-code [:na1 :na2 :settlement :na3 :org-code]]
+     [:CAV :method [:type :na :org-code]]
+     [:CCI :status-code [:na1 :na2 :physical :na3 :org-code]]
+     [:CAV :status [:type :na :org-code]]
+     [:SEQ :SEQ [:na :reg-no]]
+     [:QTY :estimated-value [:type :quantity :measure]]
+     [:NAD :balance-responsible [:org :id :na :type-code]]
+     [:NAD :metering-point [:type :na1 :na2 :na3 :street-name1 :street-name2 :house-number :coded-address :city :na4 :zip-code :country]]
+     [:NAD :consumer [:type :na1 :na2 :name :name2]]
+     [:NAD :balance-supplier [:type :id :na :type-code]]]
+    [:UNT :message-end [:number-og-segments :ref-no]]]
+   [:UNZ :UNZ [:na1 :na2]]))
 
 (def mscons-format
   (create-format
