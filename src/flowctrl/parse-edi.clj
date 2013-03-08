@@ -1,4 +1,5 @@
 (ns flowctrl.parse-edi
+  (:use [net.cgrand.enlive-html :exclude [flatten]])
   (:require [clojure.string :as string]))
 
 (defn edi-segments [edi-message]
@@ -141,3 +142,63 @@
 (defn parse-by-format
   [data format]
   (first (:result (parse data format nil))))
+
+; xml-resource is nessesary because the standard parser (html) lowercases attribute names
+(deftemplate utilmd-test (xml-resource "utilmd.xml") [data]
+  [:tns:UtilmdHeader] #(at %
+                           [:tns:IGVersion] (do->
+                                             (set-attr :S009_0065 (:message-type (:message data)))
+                                             (set-attr :S009_0052 (:unknown1 (:message data)))
+                                             (set-attr :S009_0054 (:unknown2 (:message data)))
+                                             (set-attr :S009_0051 (:unknown3 (:message data)))
+                                             (set-attr :S009_0057 (:version (:message data)))
+                                             (set-attr :T0068 (:business-transaction (:message data)))
+                                             (content (:message-reference (:message data))))
+                           [:tns:MessageName] (do->
+                                               (set-attr :C002_1001 (:document-type (:BGM data)))
+                                               (content (:document-type (:BGM data))))
+                           [:tns:MessageId] (content (:message-id (:BGM data)))
+                           [:tns:MessageFunction] (set-attr :T1225 (:original (:BGM data)))
+                           [:tns:RequestForAck](set-attr :T4343 (:ack (:BGM data))) ;TODO check
+                           [:tns:MessageDate] (do->
+                                               (set-attr :C507_2005 (:type (:message-date data)))
+                                               (set-attr :C507_2379 (:format (:message-date data)))
+                                               (content (:timestamp (:message-date data))))
+                           [:tns:TimeZone] (do->
+                                            (set-attr :C507_2005 (:type (:message-timezone data)))
+                                            (set-attr :C507_2379 (:format (:message-timezone data)))
+                                            (set-attr :C507_2380 (:deviation (:message-timezone data)))
+                                            (content (:deviation (:message-timezone data))))
+                           [:tns:Market] (do->
+                                          (set-attr :T7293 (:type (:market data)))
+                                          (set-attr :C332_3496 (:na1 (:market data)))
+                                          (set-attr :C332_3055 (:org-code (:market data))))
+                           [:tns:MessageRecipent](do->
+                                                  (set-attr :T3035 (:type (:recipient data)))
+                                                  (set-attr :C082_3055 (:id-type (:recipient data)))
+                                                  (content (:id (:recipient data))))
+                           [:tns:MessageSender] (do->
+                                                 (set-attr :T3035 (:type (:sender data)))
+                                                 (set-attr :C082_3055 (:id-type (:sender data)))
+                                                 (content (:id (:sender data)))))
+  [:tns:Transactions :tns:Transaction] (clone-for [transaction (:transactions data)]
+                                                  [:tns:TransactionId] (do->
+                                                                        (set-attr :T7495 (:type (:transaction transaction)))
+                                                                        (content (:id (:transaction transaction))))
+                                                  [:tns:MeteringPointId] (do->
+                                                                          (set-attr :T3227 (:type (:installation transaction)))
+                                                                          (set-attr :C517_3055 (:id-type (:installation transaction)))
+                                                                          (content (:na (:installation transaction))))
+                                                  [:tns:ContractStartDate] (do->
+                                                                            (set-attr :C507_2005 (:type (:contract-date transaction)))
+                                                                            (set-attr :C507_2379 (:format (:contract-date transaction)))
+                                                                            (content (:timestamp (:contract-date transaction))))
+                                                  [:tns:ReasonForTransaction] (do->
+                                                                            (set-attr :C601_9015 (:type (:reason transaction)))
+                                                                            (set-attr :C556_3055 (:org-group (:reason transaction))) ;TODO check
+                                                                            (content (:org-code (:reason transaction))))
+                                                  [:tns:BalanceResponsible] (do->
+                                                                             (set-attr :T3035 (:org (:balance-responsible transaction)))
+                                                                             (set-attr :C082_3055 (:type-code (:balance-responsible transaction)))
+                                                                             (content (:id (:balance-responsible transaction))))
+))
