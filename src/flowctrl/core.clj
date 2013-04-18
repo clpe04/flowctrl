@@ -2,13 +2,9 @@
   (:require [criterium.core :as crit]
             [clojure.tools.logging :as log]))
 
-(defn get-files-from-dir
+(defn get-file-from-dir
   [dir]
-  (rest (file-seq (clojure.java.io/file dir))))
-
-(defn files-in-dir?
-  [dir]
-  (> (count (get-files-from-dir dir)) 0))
+  (first (rest (file-seq (clojure.java.io/file dir)))))
 
 (defn load-file
   [file]
@@ -40,6 +36,22 @@
   [paths steps]
   (map #(apply flow (vec (concat % steps))) paths))
 
+(def test-flow (flow load-file (write-file "/home/cp/test-dir/out/test.noget")))
+
+(defn set-last-run
+  [flow-name]
+  (let [flow-key (keyword flow-name)]
+    (dosync (ref-set *flows* (assoc @*flows* flow-key
+                                    (assoc (flow-key @*flows*) :last-run
+                                           (System/currentTimeMillis)))))))
+
+(defn mod-thread-count
+  [flow-name fn]
+  (let [flow-key (keyword flow-name)]
+    (dosync (ref-set *flows* (assoc @*flows* flow-key
+                                    (assoc (flow-key @*flows*) :thread-count
+                                           (fn (-> @*flows* flow-key :thread-count))))))))
+
 (defn register-flow
   [name interval initializer flow]
   (dosync (ref-set *flows* (assoc @*flows* (keyword name)
@@ -51,15 +63,29 @@
                                             :flow flow)))))
 
 (defn process-flow
-  ([a flow]
-     (send-off *agent* process-flow (rest flow) ((first flow))))
-  ([a flow data]
-     (if (coll? (first flow))
-       (doseq [path (first flow)]
-         (send-off (agent 0) process-flow path data))
-       (if (= 1 (count flow))
-         ((first flow) data)
-         (send-off *agent* process-flow (rest flow) ((first flow) data))))))
+  [a flow-name flow data]
+  (log/info "Processing flow")
+  (if (coll? (first flow))
+    (doseq [path (first flow)]
+      (do
+        (mod-thread-count flow-name inc)
+        (send-off (agent 0) process-flow flow-name path data)))
+    (if (= 1 (count flow))
+      (do
+        ((first flow) data)
+        (mod-thread-count flow-name dec))
+      (send-off *agent* process-flow flow-name (rest flow) ((first flow) data)))))
+
+(defn initialize-flow
+  [a flow]
+  (log/info "Checking flow for initializing")
+  (let [data ((:initializer flow))]
+    (if (not (nil? data))
+      (do
+        (log/info "Send off thread")
+        (mod-thread-count (:name flow) inc)
+        (set-last-run (:name flow))
+        (send-off *agent* process-flow (:name flow) (:flow flow) data)))))
 
 (defn monitor
   [a]
@@ -68,8 +94,8 @@
   (doseq [flow *flows*]
     (if (and (> (- (System/currentTimeMillis) (:last-run flow))
                 (:interval flow))
-             (:initializer flow))
-      (send-off (agent 0) process-flow flow))
+             (= 0 (:thread-count flow)))
+      (send-off (agent 0) initialize-flow flow))
     (log/info "Status for flow: " (:name flow) " - Last run: " (:last-run flow)
               " - Running: " (:thread-count flow)))
   (send-off *agent* monitor))
@@ -77,4 +103,5 @@
 (defn -main
   []
   (log/info "Starting service")
+  (register-flow :test-flow 10000 #(get-file-from-dir "/home/cp/test-dir/in/") test-flow)
   (send-off (agent 0) monitor))
