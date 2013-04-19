@@ -1,40 +1,53 @@
-<UTILMD xmlns:tns="http://ngf.dk/gazelle/el/request" xmlns="http://ngf.dk/gazelle/el/request">
-   <tns:UtilmdHeader>
-      <tns:IGVersion S009_0065="" S009_0052="" S009_0054="" S009_0051="" S009_0057="" T0068=""></tns:IGVersion>
-      <tns:MessageName C002_1001="392"></tns:MessageName>
-      <tns:MessageId></tns:MessageId>
-      <tns:MessageFunction T1225=""/>
-      <tns:RequestForAck T4343=""/>
-      <tns:MessageDate C507_2005="" C507_2379=""></tns:MessageDate>
-      <tns:TimeZone C507_2005="" C507_2379="" C507_2380=""></tns:TimeZone>
-      <tns:Market T7293="" C332_3496="" C332_3055=""/>
-      <tns:MessageRecipent T3035="" C082_3055=""></tns:MessageRecipent>
-      <tns:MessageSender T3035="" C082_3055=""></tns:MessageSender>
-   </tns:UtilmdHeader>
-   <tns:Transactions>
-      <tns:Transaction>
-         <tns:TransactionId T7495=""></tns:TransactionId>
-         <tns:MeteringPointId T3227="" C517_3055=""></tns:MeteringPointId>
-         <tns:ContractStartDate C507_2005="" C507_2379=""></tns:ContractStartDate>
-         <tns:ReasonForTransaction C601_9015="" C556_3055=""></tns:ReasonForTransaction>
-         <tns:BalanceResponsible T3035="" C082_3055=""></tns:BalanceResponsible>
-         <tns:Consumer T3035="UD">
-            <tns:PartyName/>
-            <tns:PartyName2/>
-            <tns:StreetName>Jesper Brochmands Gade 17 4tv</tns:StreetName>
-            <tns:StreetName2/>
-            <tns:HouseNumber/>
-            <tns:RoadCode>
-               <tns:CountyCode/>
-               <tns:StreetCode/>
-               <tns:HouseNumber/>
-               <tns:HouseFloor/>
-               <tns:DoorNo/>
-            </tns:RoadCode>
-            <tns:CityName>København N</tns:CityName>
-            <tns:ZipCode>2200</tns:ZipCode>
-            <tns:CountryCode>DK</tns:CountryCode>
-         </tns:Consumer>
-      </tns:Transaction>
-   </tns:Transactions>
+<UTILMD>
+   <UtilmdHeader>
+      <IGVersion S009_0065="" S009_0052="" S009_0054="" S009_0051="" S009_0057="" T0068=""></IGVersion>
+      <MessageName C002_1001="" C002_3055=""></MessageName>
+      <MessageId></MessageId>
+      <MessageFunction T1225=""/>
+      <RequestForAck T4343=""/>
+      <MessageDate C507_2005="" C507_2379=""></MessageDate>
+      <TimeZone C507_2005="" C507_2379="" C507_2380=""></TimeZone>
+      <Market T7293="" C332_3496="" C332_3055=""/>
+      <MessageRecipent T3035="" C082_3055=""></MessageRecipent>
+      <MessageSender T3035="" C082_3055=""></MessageSender>
+   </UtilmdHeader>
+   <Transactions>
+      <Transaction>
+         <TransactionId T7495=""></TransactionId>
+         <MeteringPointId T3227="" C517_3055=""></MeteringPointId>
+         <ContractStartDate C507_2005="" C507_2379=""></ContractStartDate>
+         <ValidityStartDate C507_2005="" C507_2379=""></ValidityStartDate>
+         <NextScheduledReadings>
+           <NextScheduledReading C507_2005="" C507_2379=""></NextScheduledReading>
+         </NextScheduledReadings>
+         <ReasonForTransaction C601_9015="" C556_3055=""></ReasonForTransaction>
+         <PhysicalStatus C240_7037="" C240_3055="" C889_3055=""></PhysicalStatus>
+         <SettlementMethod C240_7037="" C240_3055="" C889_3055=""></SettlementMethod>
+         <EstimatedAnnualVolume C286_1050="" C186_6063="" C186_6411=""></EstimatedAnnualVolume>
+         <BalanceResponsible T3035="" C082_3055=""></BalanceResponsible>
+         <BalanceSupplier T3035="" C082_3055=""></BalanceSupplier>
+         <Consumer T3035="">
+            <PartyName/>
+            <PartyName2/>
+            <CityName/>
+            <ZipCode/>
+            <CountryCode/>
+         </Consumer>
+         <MeterLocationAddress T3035="">
+            <StreetName/>
+            <StreetName2/>
+            <HouseNumber/>
+            <RoadCode>
+               <CountyCode/>
+               <StreetCode/>
+               <HouseNumber/>
+               <HouseFloor/>
+               <DoorNo/>
+            </RoadCode>
+            <CityName/>
+            <ZipCode/>
+            <CountryCode/>
+         </MeterLocationAddress>
+      </Transaction>
+   </Transactions>
 </UTILMD>
