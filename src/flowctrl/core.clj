@@ -1,7 +1,8 @@
 (ns flowctrl.core
   (:require [criterium.core :as crit]
             [clojure.tools.logging :as log]
-            [flowctrl.parse-edi :as edi]))
+            [flowctrl.parse-edi :as edi])
+  (:gen-class))
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
@@ -9,9 +10,11 @@
   [dir]
   (first (rest (file-seq (clojure.java.io/file dir)))))
 
-(defn load-file
+(defn load-edi-file
   [file]
-  (slurp (.getAbsolutePath file)))
+  (let [data (slurp (.getAbsolutePath file))]
+    (clojure.java.io/delete-file file)
+    data))
 
 (defn write-xml-file
   [dir]
@@ -39,7 +42,7 @@
   [paths steps]
   (map #(apply flow (vec (concat % steps))) paths))
 
-(def test-flow (flow load-file
+(def test-flow (flow load-edi-file
                      edi/parse-edi
                      (edi/get-parser-by-format edi/utilmd-format)
                      edi/to-xml
@@ -98,7 +101,8 @@
   [a]
   (Thread/sleep 10000)
   (log/info "Monitoring")
-  (doseq [flow *flows*]
+  (doseq [flow (vals @*flows*)]
+    (log/info (str "Checking flow: " (:name flow)))
     (if (and (> (- (System/currentTimeMillis) (:last-run flow))
                 (:interval flow))
              (= 0 (:thread-count flow)))
