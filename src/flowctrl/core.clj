@@ -1,6 +1,9 @@
 (ns flowctrl.core
   (:require [criterium.core :as crit]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [flowctrl.parse-edi :as edi]))
+
+(defn uuid [] (str (java.util.UUID/randomUUID)))
 
 (defn get-file-from-dir
   [dir]
@@ -10,10 +13,10 @@
   [file]
   (slurp (.getAbsolutePath file)))
 
-(defn write-file
-  [filepath]
+(defn write-xml-file
+  [dir]
   (fn [data]
-    (spit filepath data)))
+    (spit (str dir (uuid) ".xml") data)))
 
 (def #^{:dynamic true} *flows* (ref {}))
 
@@ -36,7 +39,11 @@
   [paths steps]
   (map #(apply flow (vec (concat % steps))) paths))
 
-(def test-flow (flow load-file (write-file "/home/cp/test-dir/out/test.noget")))
+(def test-flow (flow load-file
+                     edi/parse-edi
+                     (edi/get-parser-by-format edi/utilmd-format)
+                     edi/to-xml
+                     (write-xml-file "/home/cp/test-dir/out/")))
 
 (defn set-last-run
   [flow-name]
