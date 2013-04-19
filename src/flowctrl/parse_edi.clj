@@ -1,6 +1,7 @@
 (ns flowctrl.parse-edi
   (:use [net.cgrand.enlive-html :exclude [flatten]])
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [criterium.core :as crit]))
 
 (defn edi-segments [edi-message]
   "Returns a vector containing all segments"
