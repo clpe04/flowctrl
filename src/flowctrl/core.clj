@@ -6,6 +6,10 @@
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
 
+(defn get-files-from-dir
+  [dir]
+  (rest (file-seq (clojure.java.io/file dir))))
+
 (defn get-file-from-dir
   [dir]
   (first (rest (file-seq (clojure.java.io/file dir)))))
@@ -46,7 +50,7 @@
                      edi/parse-edi
                      (edi/get-parser-by-format edi/utilmd-format)
                      edi/to-xml
-                     (write-xml-file "/home/cp/test-dir/out/")))
+                     (write-xml-file "/tmp/openedix/clojure/out/")))
 
 (defn set-last-run
   [flow-name]
@@ -74,7 +78,6 @@
 
 (defn process-flow
   [a flow-name flow data]
-  (log/info "Processing flow")
   (if (coll? (first flow))
     (doseq [path (first flow)]
       (do
@@ -86,33 +89,39 @@
         (mod-thread-count flow-name dec))
       (send-off *agent* process-flow flow-name (rest flow) ((first flow) data)))))
 
+(defn process-single-flow
+  [flow data]
+  (reduce #(%2 %1) data flow))
+
 (defn initialize-flow
   [a flow]
-  (log/info "Checking flow for initializing")
   (let [data ((:initializer flow))]
     (if (not (nil? data))
       (do
-        (log/info "Send off thread")
         (mod-thread-count (:name flow) inc)
         (set-last-run (:name flow))
         (send-off *agent* process-flow (:name flow) (:flow flow) data)))))
 
 (defn monitor
   [a]
-  (Thread/sleep 10000)
-  (log/info "Monitoring")
   (doseq [flow (vals @*flows*)]
-    (log/info (str "Checking flow: " (:name flow)))
     (if (and (> (- (System/currentTimeMillis) (:last-run flow))
                 (:interval flow))
              (= 0 (:thread-count flow)))
-      (send-off (agent 0) initialize-flow flow))
-    (log/info "Status for flow: " (:name flow) " - Last run: " (:last-run flow)
-              " - Running: " (:thread-count flow)))
-  (send-off *agent* monitor))
+      (send-off (agent 0) initialize-flow flow)))
+    (send-off *agent* monitor))
       
+(comment
+  (defn -main
+  []
+  (register-flow :test-flow 0 #(get-file-from-dir "/tmp/openedix/clojure/in/") test-flow)
+  (send-off (agent 0) monitor))
+  )
+
+(defn process-chunk
+  [chunk]
+  (doall (map #(process-single-flow test-flow %) chunk)))
+
 (defn -main
   []
-  (log/info "Starting service")
-  (register-flow :test-flow 10000 #(get-file-from-dir "/home/cp/test-dir/in/") test-flow)
-  (send-off (agent 0) monitor))
+  (doall (map process-chunk (partition 5000 5000 nil (get-files-from-dir "/tmp/openedix/clojure/in/")))))
