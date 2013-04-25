@@ -7,6 +7,7 @@
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [enlive "1.1.1"]
                  [criterium "0.3.1"]
+                 [org.clojure/data.xml "0.0.7"]
                  [org.clojure/tools.logging "0.2.3"]
                  [log4j "1.2.15" :exclusions [javax.mail/mail
                                               javax.jms/jms
