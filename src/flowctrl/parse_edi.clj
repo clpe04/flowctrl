@@ -23,6 +23,16 @@
   [edi-message]
   (map edi-data-elements (edi-segments edi-message)))
 
+(defn combine-values
+  [data]
+  (if (coll? data)
+    (string/join ":" data)
+    data))
+
+(defn edi-to-str
+  [data]
+  (str (string/join "'" (map #(string/join "+" (map combine-values %)) data)) "'"))
+
 (def mscons "UNA:+.? 'UNB+UNOC:3+5790000681327:14+5790001687137:14+091029:1027+L091029102749S++DK-CUS++1+D'UNH+1+MSCONS:D:96A:ZZ:E2DK02+DK-BT-007-002'BGM+Z01::260+L091029102749S+9+AB'DTM+137:200910290925:203'DTM+163:200812312300:203'DTM+164:200910232200:203'DTM+ZZZ:0:805'NAD+FR+5790000681327::9'NAD+DO+5790001687137::9'UNS+D'NAD+XX'LOC+90+571313134802045214::9'LIN+1++9011:::DK'MEA+AAZ++KWH'QTY+136:9127'DTM+324:200812312300200910232200:Z13'CCI+++Z04'MEA+SV++ZZ:1'LIN+2++9016:::DK'MEA+AAZ++KWH'QTY+136:9127'DTM+324:200812312300200910232200:Z13'CCI+++Z04'MEA+SV++ZZ:1'LIN+3++9015:::DK'MEA+AAZ++KWH'QTY+31:12444'CCI+++Z04'MEA+SV++ZZ:1'CNT+1:30698'UNT+30+1'UNZ+1+L091029102749S'")
 
 (def utilmd "UNA:+.? 'UNB+UNOC:3+5790000392261:14+5790000710133:14+130218:1436+L1302181436076++DK-CUS++1+DK'UNH+1+UTILMD:D:02B:UN:E5DK02+DK-BT-004-002'BGM+E07::260+L1302181436076+9+AB'DTM+137:201302181334:203'DTM+735:?+0000:406'MKS+23+E01::260'NAD+MR+5790000710133::9'NAD+MS+5790000392261::9'IDE+24+L1302181436076E571313124401206383'DTM+92:201209302200:203'DTM+157:201302172300:203'DTM+752:1231:106'STS+7++Z04::DK'LOC+172+571313124401206383::9'CCI+++E02::260'CAV+E01::260'CCI+++E15::260'CAV+E22::260'SEQ++1'QTY+31:503:KWH'NAD+DDK+5790000701278::9'NAD+IT++++Højbovej::8:630;1069;8;;+Vejle++7100+DK'NAD+UD+++Hans Mandøe:E Glæsner'NAD+DDQ+5790000710133::9'UNT+24+1'UNZ+1+L1302181436076'")
@@ -268,9 +278,11 @@
         msg-date (get-by-tags :UtilmdHeader :MessageDate xml)
         msg-timezone (get-by-tags :UtilmdHeader :TimeZone xml)
         mks  (get-by-tags :UtilmdHeader :Market xml)
-        recipient (get-by-tags :UtilmdHeader :MessageRecipent xml)
+        recipient (get-by-tags :UtilmdHeader :MessageRecipient xml)
         sender (get-by-tags :UtilmdHeader :MessageSender xml)]
     (vector
+     (vector "UNA:+.?")
+     (vector "UNB" ["UNOC" 3] [(apply str (:content sender)) 14] [(apply str (:content recipient)) 14] ["091022" "0739"] (apply str (:content ig)) "" "DK-CUS" "" "" "DK")
      (vector "UNH" (apply str (:content ig)) (vector (:S009_0065 ig-attr) (:S009_0052 ig-attr) (:S009_0054 ig-attr) (:S009_0051 ig-attr) (:S009_0057 ig-attr)) (:T0068 ig-attr))
      (vector "BGM" (vector (apply str (:content msg-name)) "" (:C002_3055 (:attrs msg-name))) (apply str (:content msg-id)) (:T1225 (:attrs msg-fn)) (:T4343 (:attrs ack)))
      (vector "DTM" (vector (:C507_2005 (:attrs msg-date)) (apply str (:content msg-date)) (:C507_2379 (:attrs msg-date))))
