@@ -248,3 +248,33 @@
             [:CityName {} (:city (:metering-point transaction))]
             [:ZipCode {} (:zip-code (:metering-point transaction))]
             [:CountryCode {} (:country (:metering-point transaction))]]])]]])))
+
+(defn get-by-tag
+  [tag data]
+  (first (filter #(= tag (:tag %)) (:content data))))
+
+(defn get-by-tags
+  [& args]
+  (reduce #(get-by-tag %2 %1) (last args) (drop-last args)))
+
+(defn convert-to-utilmde07-edi
+  [xml]
+  (let [ig (get-by-tags :UtilmdHeader :IGVersion xml)
+        ig-attr (:attrs ig)
+        msg-name (get-by-tags :UtilmdHeader :MessageName xml)
+        msg-id (get-by-tags :UtilmdHeader :MessageId xml)
+        msg-fn (get-by-tags :UtilmdHeader :MessageFunction xml)
+        ack (get-by-tags :UtilmdHeader :RequestForAck xml)
+        msg-date (get-by-tags :UtilmdHeader :MessageDate xml)
+        msg-timezone (get-by-tags :UtilmdHeader :TimeZone xml)
+        mks  (get-by-tags :UtilmdHeader :Market xml)
+        recipient (get-by-tags :UtilmdHeader :MessageRecipent xml)
+        sender (get-by-tags :UtilmdHeader :MessageSender xml)]
+    (vector
+     (vector "UNH" (apply str (:content ig)) (vector (:S009_0065 ig-attr) (:S009_0052 ig-attr) (:S009_0054 ig-attr) (:S009_0051 ig-attr) (:S009_0057 ig-attr)) (:T0068 ig-attr))
+     (vector "BGM" (vector (apply str (:content msg-name)) "" (:C002_3055 (:attrs msg-name))) (apply str (:content msg-id)) (:T1225 (:attrs msg-fn)) (:T4343 (:attrs ack)))
+     (vector "DTM" (vector (:C507_2005 (:attrs msg-date)) (apply str (:content msg-date)) (:C507_2379 (:attrs msg-date))))
+     (vector "DTM" (vector (:C507_2005 (:attrs msg-timezone)) (apply str (:content msg-timezone)) (:C507_2379 (:attrs msg-timezone))))
+     (vector "MKS" (:T7293 (:attrs mks)) (vector (:C332_3496 (:attrs mks)) "" (:C332_3055 (:attrs mks))))
+     (vector "NAD" (:T3035 (:attrs recipient)) (vector (apply str (:content recipient)) "" (:C082_3055 (:attrs recipient))))
+     (vector "NAD" (:T3035 (:attrs sender)) (vector (apply str (:content sender)) "" (:C082_3055 (:attrs sender)))))))
