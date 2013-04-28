@@ -279,13 +279,12 @@
         mks  (get-by-tags :UtilmdHeader :Market xml)
         recipient (get-by-tags :UtilmdHeader :MessageRecipient xml)
         sender (get-by-tags :UtilmdHeader :MessageSender xml)]
-    (vector
-     (vector "UNA:+.?")
-     (vector "UNB" ["UNOC" 3] [(apply str (:content sender)) 14] [(apply str (:content recipient)) 14] ["091022" "0739"] (apply str (:content ig)) "" "DK-CUS" "" "" "DK")
-     (vector "UNH" (apply str (:content ig)) (vector (:S009_0065 ig-attr) (:S009_0052 ig-attr) (:S009_0054 ig-attr) (:S009_0051 ig-attr) (:S009_0057 ig-attr)) (:T0068 ig-attr))
-     (vector "BGM" (vector (apply str (:content msg-name)) "" (:C002_3055 (:attrs msg-name))) (apply str (:content msg-id)) (:T1225 (:attrs msg-fn)) (:T4343 (:attrs ack)))
-     (vector "DTM" (vector (:C507_2005 (:attrs msg-date)) (apply str (:content msg-date)) (:C507_2379 (:attrs msg-date))))
-     (vector "DTM" (vector (:C507_2005 (:attrs msg-timezone)) (apply str (:content msg-timezone)) (:C507_2379 (:attrs msg-timezone))))
-     (vector "MKS" (:T7293 (:attrs mks)) (vector (:C332_3496 (:attrs mks)) "" (:C332_3055 (:attrs mks))))
-     (vector "NAD" (:T3035 (:attrs recipient)) (vector (apply str (:content recipient)) "" (:C082_3055 (:attrs recipient))))
-     (vector "NAD" (:T3035 (:attrs sender)) (vector (apply str (:content sender)) "" (:C082_3055 (:attrs sender)))))))
+    [["UNA:+.?"]
+     ["UNB" ["UNOC" 3] [(apply str (:content sender)) 14] [(apply str (:content recipient)) 14] ["091022" "0739"] (apply str (:content ig)) "" "DK-CUS" "" "" "DK"]
+     ["UNH" (apply str (:content ig)) [(:S009_0065 ig-attr) (:S009_0052 ig-attr) (:S009_0054 ig-attr) (:S009_0051 ig-attr) (:S009_0057 ig-attr)] (:T0068 ig-attr)]
+     ["BGM" [(apply str (:content msg-name)) "" (:C002_3055 (:attrs msg-name))] (apply str (:content msg-id)) (:T1225 (:attrs msg-fn)) (:T4343 (:attrs ack))]
+     ["DTM" [(:C507_2005 (:attrs msg-date)) (apply str (:content msg-date)) (:C507_2379 (:attrs msg-date))]]
+     ["DTM" [(:C507_2005 (:attrs msg-timezone)) (apply str (:content msg-timezone)) (:C507_2379 (:attrs msg-timezone))]]
+     ["MKS" (:T7293 (:attrs mks)) [(:C332_3496 (:attrs mks)) "" (:C332_3055 (:attrs mks))]]
+     ["NAD" (:T3035 (:attrs recipient)) [(apply str (:content recipient)) "" (:C082_3055 (:attrs recipient))]]
+     ["NAD" (:T3035 (:attrs sender)) [(apply str (:content sender)) "" (:C082_3055 (:attrs sender))]]]))
