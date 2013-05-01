@@ -266,25 +266,67 @@
   [& args]
   (reduce #(get-by-tag %2 %1) (last args) (drop-last args)))
 
-(defn convert-to-utilmde07-edi
-  [xml]
-  (let [ig (get-by-tags :UtilmdHeader :IGVersion xml)
+(defn convert-to-utilmde07-edi-header
+  [xml-header]
+  (let [ig (get-by-tags :IGVersion xml-header)
         ig-attr (:attrs ig)
-        msg-name (get-by-tags :UtilmdHeader :MessageName xml)
-        msg-id (get-by-tags :UtilmdHeader :MessageId xml)
-        msg-fn (get-by-tags :UtilmdHeader :MessageFunction xml)
-        ack (get-by-tags :UtilmdHeader :RequestForAck xml)
-        msg-date (get-by-tags :UtilmdHeader :MessageDate xml)
-        msg-timezone (get-by-tags :UtilmdHeader :TimeZone xml)
-        mks  (get-by-tags :UtilmdHeader :Market xml)
-        recipient (get-by-tags :UtilmdHeader :MessageRecipient xml)
-        sender (get-by-tags :UtilmdHeader :MessageSender xml)]
-    [["UNA:+.?"]
-     ["UNB" ["UNOC" 3] [(apply str (:content sender)) 14] [(apply str (:content recipient)) 14] ["091022" "0739"] (apply str (:content ig)) "" "DK-CUS" "" "" "DK"]
-     ["UNH" (apply str (:content ig)) [(:S009_0065 ig-attr) (:S009_0052 ig-attr) (:S009_0054 ig-attr) (:S009_0051 ig-attr) (:S009_0057 ig-attr)] (:T0068 ig-attr)]
+        msg-name (get-by-tags :MessageName xml-header)
+        msg-id (get-by-tags :MessageId xml-header)
+        msg-fn (get-by-tags :MessageFunction xml-header)
+        ack (get-by-tags :RequestForAck xml-header)
+        msg-date (get-by-tags :MessageDate xml-header)
+        msg-timezone (get-by-tags :TimeZone xml-header)
+        mks  (get-by-tags :Market xml-header)
+        recipient (get-by-tags :MessageRecipient xml-header)
+        sender (get-by-tags :MessageSender xml-header)]
+    [["UNH" (apply str (:content ig)) [(:S009_0065 ig-attr) (:S009_0052 ig-attr) (:S009_0054 ig-attr) (:S009_0051 ig-attr) (:S009_0057 ig-attr)] (:T0068 ig-attr)]
      ["BGM" [(apply str (:content msg-name)) "" (:C002_3055 (:attrs msg-name))] (apply str (:content msg-id)) (:T1225 (:attrs msg-fn)) (:T4343 (:attrs ack))]
      ["DTM" [(:C507_2005 (:attrs msg-date)) (apply str (:content msg-date)) (:C507_2379 (:attrs msg-date))]]
      ["DTM" [(:C507_2005 (:attrs msg-timezone)) (apply str (:content msg-timezone)) (:C507_2379 (:attrs msg-timezone))]]
      ["MKS" (:T7293 (:attrs mks)) [(:C332_3496 (:attrs mks)) "" (:C332_3055 (:attrs mks))]]
      ["NAD" (:T3035 (:attrs recipient)) [(apply str (:content recipient)) "" (:C082_3055 (:attrs recipient))]]
      ["NAD" (:T3035 (:attrs sender)) [(apply str (:content sender)) "" (:C082_3055 (:attrs sender))]]]))
+
+(defn convert-to-utilmde07-edi-transactions
+  [xml-transactions]
+  (for [transaction (:content xml-transactions)]
+    (let [id (get-by-tag :TransactionId transaction)
+          validity-start (get-by-tag :ValidityStartDate transaction)
+          contract-start (get-by-tag :ContractStartDate transaction)
+          reading (get-by-tags :NextScheduledReadings :NextScheduledReading transaction)
+          reason (get-by-tag :ReasonForTransaction transaction)
+          metering-point (get-by-tag :MeteringPointId transaction)
+          physical-status (get-by-tag :PhysicalStatus transaction)
+          settlement-method (get-by-tag :SettlementMethod transaction)
+          estimated-annual-volumen (get-by-tag :EstimatedAnnualVolume transaction)
+          balance-responsible (get-by-tag :BalanceResponsible transaction)
+          balance-supplier (get-by-tag :BalanceSupplier transaction)
+          consumer (get-by-tag :Consumer transaction)
+          meter-location (get-by-tag :MeterLocationAddress transaction)]
+      [["IDE" (apply str (:content id)) (:T7495 (:attrs id))]
+       ["DTM" [(:C507_2005 (:attrs validity-start)) (apply str (:content validity-start)) (:C507_2379 (:attrs validity-start))]]
+       ["DTM" [(:C507_2005 (:attrs contract-start)) (apply str (:content contract-start)) (:C507_2379 (:attrs contract-start))]]
+       ["DTM" [(:C507_2005 (:attrs reading)) (apply str (:content reading)) (:C507_2379 (:attrs reading))]]
+       ["STS" (:C601_9015 (:attrs reason)) "" [(apply str (:content reason)) "" (:C556_3055 (:attrs reason))]]
+       ["LOC" (:T3227 (:attrs metering-point))[(apply str (:content metering-point)) "" (:C517_3055 (:attrs metering-point))]]
+       ["CCI" "" "" [(:C240_7037 (:attrs settlement-method)) "" (:C240_3055 (:attrs settlement-method))]]
+       ["CAV" [(apply str (:content settlement-method)) "" (:C889_3055 (:attrs settlement-method))]]
+       ["CCI" "" "" [(:C240_7037 (:attrs physical-status)) "" (:C240_3055 (:attrs physical-status))]]
+       ["CAV" [(apply str (:content physical-status)) "" (:C889_3055 (:attrs physical-status))]]
+       ["SEQ" "" (:C286_1050 (:attrs estimated-annual-volumen))]
+       ["QTY" [(:C186_6063 (:attrs estimated-annual-volumen)) (apply str (:content settlement-method)) (:C186_6411 (:attrs estimated-annual-volumen))]]
+       ["NAD" (:T3035 (:attrs balance-responsible)) [(apply str (:content balance-responsible)) "" (:C082_3055 (:attrs balance-responsible))]]
+       ["NAD" (:T3035 (:attrs meter-location)) "" "" "" [(apply str (:content (get-by-tags :StreetName meter-location)))
+                                                         (apply str (:content (get-by-tags :StreetName2 meter-location)))
+                                                         (apply str (:content (get-by-tags :HouseNumber meter-location)))]
+        (apply str (:content (get-by-tags :CityName meter-location))) ""
+        (apply str (:content (get-by-tags :ZipCode meter-location)))
+        (apply str (:content (get-by-tags :CountryCode meter-location)))]
+       ["NAD" (:T3035 (:attrs consumer)) "" "" (apply str (:content (get-by-tags :PartyName consumer)))]
+       ["NAD" (:T3035 (:attrs balance-supplier)) [(apply str (:content balance-supplier)) "" (:C082_3055 (:attrs balance-supplier))]]
+       ])))
+
+(defn convert-to-utilmde07-edi
+  [xml]
+  (reduce into (convert-to-utilmde07-edi-header (get-by-tags :UtilmdHeader xml))
+          (convert-to-utilmde07-edi-transactions (get-by-tags :Transactions xml))))
