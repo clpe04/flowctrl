@@ -199,64 +199,64 @@
                                            (:id (:recipient data)))
                               (xml/element :MessageSender {:T3035 (:type (:sender data))
                                                            :C082_3055 (:id-type (:sender data))}
-                                           (:id (:sender data)))
-                              (xml/element :Transactions {}
-                                           (for [transaction (:transactions data)]
-                                             (xml/element :Transaction {}
-                                                          (xml/element :TransactionId {:T7495 (:type (:transaction transaction))}
-                                                                       (:id (:transaction transaction)))
-                                                          (xml/element :MeteringPointId {:T3227 (:type (:installation transaction))
-                                                                                         :C517_3055 (:id-type (:installation transaction))}
-                                                                       (:na (:installation transaction)))
-                                                          (xml/element :ContractStartDate {:C507_2005 (:type (:contract-date transaction))
-                                                                                           :C507_2379 (:format (:contract-date transaction))}
-                                                                       (:timestamp (:contract-date transaction)))
-                                                          (xml/element :ValidityStartDate {:C507_2005 (:type (:validity-date transaction))
-                                                                                           :C507_2379 (:format (:validity-date transaction))}
-                                                                       (:timestamp (:validity-date transaction)))
-                                                          (xml/element :NextScheduledReadings {}
-                                                                       (xml/element :NextScheduledReading {:C507_2005 (:type (:reading-date transaction))
-                                                                                                           :C507_2379 (:format (:reading-date transaction))}
-                                                                                    (:timestamp (:reading-date transaction))))
-                                                          (xml/element :ReasonForTransaction {:C601_9015 (:type (:reason transaction))
-                                                                                              :C556_3055 (:org-group (:reason transaction))}
-                                                                       (:org-code (:reason transaction)))
-                                                          (xml/element :PhysicalStatus {:C240_7037 (:physical (:status-code transaction))
-                                                                                        :C240_3055 (:org-code (:status-code transaction))
-                                                                                        :C889_3055 (:org-code (:status transaction))}
-                                                                       (:type (:status transaction)))
-                                                          (xml/element :SettlementMethod {:C240_7037 (:settlement (:method-code transaction))
-                                                                                          :C240_3055 (:org-code (:method-code transaction))
-                                                                                          :C889_3055 (:org-code (:method transaction))}
-                                                                       (:type (:method transaction)))
-                                                          (xml/element :EstimatedAnnualVolume {:C286_1050 (:reg-no (:SEQ transaction))
-                                                                                               :C186_6063 (:type (:estimated-value transaction))
-                                                                                               :C186_6411 (:measure (:estimated-value transaction))}
-                                                                       (:quantity (:estimated-value transaction)))
-                                                          (xml/element :BalanceResponsible {:T3035 (:org (:balance-responsible transaction))
-                                                                                            :C082_3055 (:type-code (:balance-responsible transaction))}
-                                                                       (:id (:balance-responsible transaction)))
-                                                          (xml/element :BalanceSupplier {:T3035 (:org (:balance-supplier transaction))
-                                                                                         :C082_3055 (:type-code (:balance-supplier transaction))}
-                                                                       (:id (:balance-supplier transaction)))
-                                                          (xml/element :Consumer {:T3035 (:type (:consumer transaction))}
-                                                                       (xml/element :PartyName {} (:name (:consumer transaction)))
-                                                                       (xml/element :CityName {})
-                                                                       (xml/element :ZipCode {})
-                                                                       (xml/element :CountryCode {}))
-                                                          (xml/element :MeterLocationAddress {:T3035 (:type (:metering-point transaction))}
-                                                                       (xml/element :StreetName {} (:street-name1 (:metering-point transaction)))
-                                                                       (xml/element :StreetName2 {} (:street-name2 (:metering-point transaction)))
-                                                                       (xml/element :HouseNumber {} (:house-number (:metering-point transaction)))
-                                                                       (xml/element :RoadCode {}
-                                                                                    (xml/element :CountryCode {})
-                                                                                    (xml/element :StreetCode {})
-                                                                                    (xml/element :HouseNumber {})
-                                                                                    (xml/element :HouseFloor {})
-                                                                                    (xml/element :DoorNo {}))
-                                                                       (xml/element :CityName {} (:city (:metering-point transaction)))
-                                                                       (xml/element :ZipCode {} (:zip-code (:metering-point transaction)))
-                                                                       (xml/element :CountryCode {} (:country (:metering-point transaction)))))))))))
+                                           (:id (:sender data))))
+                 (xml/element :Transactions {}
+                              (for [transaction (:transactions data)]
+                                (xml/element :Transaction {}
+                                             (xml/element :TransactionId {:T7495 (:type (:transaction transaction))}
+                                                          (:id (:transaction transaction)))
+                                             (xml/element :MeteringPointId {:T3227 (:type (:installation transaction))
+                                                                            :C517_3055 (:id-type (:installation transaction))}
+                                                          (:na (:installation transaction)))
+                                             (xml/element :ContractStartDate {:C507_2005 (:type (:contract-date transaction))
+                                                                              :C507_2379 (:format (:contract-date transaction))}
+                                                          (:timestamp (:contract-date transaction)))
+                                             (xml/element :ValidityStartDate {:C507_2005 (:type (:validity-date transaction))
+                                                                              :C507_2379 (:format (:validity-date transaction))}
+                                                          (:timestamp (:validity-date transaction)))
+                                             (xml/element :NextScheduledReadings {}
+                                                          (xml/element :NextScheduledReading {:C507_2005 (:type (:reading-date transaction))
+                                                                                              :C507_2379 (:format (:reading-date transaction))}
+                                                                       (:timestamp (:reading-date transaction))))
+                                             (xml/element :ReasonForTransaction {:C601_9015 (:type (:reason transaction))
+                                                                                 :C556_3055 (:org-group (:reason transaction))}
+                                                          (:org-code (:reason transaction)))
+                                             (xml/element :PhysicalStatus {:C240_7037 (:physical (:status-code transaction))
+                                                                           :C240_3055 (:org-code (:status-code transaction))
+                                                                           :C889_3055 (:org-code (:status transaction))}
+                                                          (:type (:status transaction)))
+                                             (xml/element :SettlementMethod {:C240_7037 (:settlement (:method-code transaction))
+                                                                             :C240_3055 (:org-code (:method-code transaction))
+                                                                             :C889_3055 (:org-code (:method transaction))}
+                                                          (:type (:method transaction)))
+                                             (xml/element :EstimatedAnnualVolume {:C286_1050 (:reg-no (:SEQ transaction))
+                                                                                  :C186_6063 (:type (:estimated-value transaction))
+                                                                                  :C186_6411 (:measure (:estimated-value transaction))}
+                                                          (:quantity (:estimated-value transaction)))
+                                             (xml/element :BalanceResponsible {:T3035 (:org (:balance-responsible transaction))
+                                                                               :C082_3055 (:type-code (:balance-responsible transaction))}
+                                                          (:id (:balance-responsible transaction)))
+                                             (xml/element :BalanceSupplier {:T3035 (:org (:balance-supplier transaction))
+                                                                            :C082_3055 (:type-code (:balance-supplier transaction))}
+                                                          (:id (:balance-supplier transaction)))
+                                             (xml/element :Consumer {:T3035 (:type (:consumer transaction))}
+                                                          (xml/element :PartyName {} (:name (:consumer transaction)))
+                                                          (xml/element :CityName {})
+                                                          (xml/element :ZipCode {})
+                                                          (xml/element :CountryCode {}))
+                                             (xml/element :MeterLocationAddress {:T3035 (:type (:metering-point transaction))}
+                                                          (xml/element :StreetName {} (:street-name1 (:metering-point transaction)))
+                                                          (xml/element :StreetName2 {} (:street-name2 (:metering-point transaction)))
+                                                          (xml/element :HouseNumber {} (:house-number (:metering-point transaction)))
+                                                          (xml/element :RoadCode {}
+                                                                       (xml/element :CountryCode {})
+                                                                       (xml/element :StreetCode {})
+                                                                       (xml/element :HouseNumber {})
+                                                                       (xml/element :HouseFloor {})
+                                                                       (xml/element :DoorNo {}))
+                                                          (xml/element :CityName {} (:city (:metering-point transaction)))
+                                                          (xml/element :ZipCode {} (:zip-code (:metering-point transaction)))
+                                                          (xml/element :CountryCode {} (:country (:metering-point transaction))))))))))
 
 (defn get-by-tag
   [tag data]
