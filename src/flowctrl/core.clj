@@ -49,7 +49,7 @@
 (def test-flow (flow load-edi-file
                      edi/parse-edi
                      (edi/get-parser-by-format edi/utilmd-format)
-                     edi/to-xml
+                     edi/convert-to-utilmd-xml
                      (write-xml-file "/tmp/openedix/clojure/out/")))
 
 (defn set-last-run
