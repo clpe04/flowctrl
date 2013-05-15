@@ -1,7 +1,9 @@
 (ns flowctrl.core
   (:require [criterium.core :as crit]
             [clojure.tools.logging :as log]
-            [flowctrl.parse-edi :as edi])
+            [flowctrl.parse-edi :as edi]
+            [clojure.data.xml :as xml]
+            [clojure.string :as string])
   (:gen-class))
 
 (defn uuid [] (str (java.util.UUID/randomUUID)))
@@ -14,16 +16,29 @@
   [dir]
   (first (rest (file-seq (clojure.java.io/file dir)))))
 
-(defn load-edi-file
+(defn load-disk-file
   [file]
   (let [data (slurp (.getAbsolutePath file))]
     (clojure.java.io/delete-file file)
     data))
 
-(defn write-xml-file
+(defn load-and-move-file
+  [file]
+  (let [file-path (.getAbsolutePath file)]
+    (clojure.java.io/copy (clojure.java.io/file file-path)
+                          (clojure.java.io/file (str (.getParent file) "/" (uuid) "."
+                                                     (last (string/split file-path #"\.")))))
+    (load-disk-file file)))
+
+(defn write-file
+  [dir extension]
+  (fn [data]
+    (spit (str dir (uuid) "." extension) data)))
+
+(defn write-to-dev-null
   [dir]
   (fn [data]
-    (spit (str dir (uuid) ".xml") data)))
+    (spit dir data)))
 
 (def #^{:dynamic true} *flows* (ref {}))
 
@@ -46,11 +61,17 @@
   [paths steps]
   (map #(apply flow (vec (concat % steps))) paths))
 
-(def test-flow (flow load-edi-file
-                     edi/parse-edi
-                     (edi/get-parser-by-format edi/utilmd-format)
-                     edi/convert-to-utilmd-xml
-                     (write-xml-file "/tmp/openedix/clojure/out/")))
+(def edi-flow (flow load-and-move-file
+                    edi/parse-edi
+                    (edi/get-parser-by-format edi/utilmd-format)
+                    edi/convert-to-utilmd-xml
+                    (write-to-dev-null "/dev/null/")))
+
+(def xml-flow (flow load-and-move-file
+                    xml/parse-str
+                    edi/create-utilmd-edi-struct
+                    edi/edi-to-str
+                    (write-to-dev-null "/dev/null/")))
 
 (defn set-last-run
   [flow-name]
@@ -82,25 +103,34 @@
     (doseq [path (first flow)]
       (do
         (mod-thread-count flow-name inc)
-        (send-off (agent 0) process-flow flow-name path data)))
+        (send (agent 0) process-flow flow-name path data)))
     (if (= 1 (count flow))
       (do
         ((first flow) data)
         (mod-thread-count flow-name dec))
-      (send-off *agent* process-flow flow-name (rest flow) ((first flow) data)))))
+      (send *agent* process-flow flow-name (rest flow) ((first flow) data)))))
 
 (defn process-single-flow
   [flow data]
   (reduce #(%2 %1) data flow))
 
+(defn process-chunked-flow
+  [a flow-name flow chunk]
+  (try
+    (doall (map #(process-single-flow flow %) chunk))
+    (log/info (str flow-name " processed"))
+    (catch Exception ex (log/warn (str "Exception in flow: " flow-name " - " ex)))
+    (finally (mod-thread-count flow-name dec))))
+
 (defn initialize-flow
   [a flow]
+  (mod-thread-count (:name flow) inc)
   (let [data ((:initializer flow))]
-    (if (not (nil? data))
+    (if (not (empty? data))
       (do
-        (mod-thread-count (:name flow) inc)
         (set-last-run (:name flow))
-        (send-off *agent* process-flow (:name flow) (:flow flow) data)))))
+        (send *agent* process-chunked-flow (:name flow) (:flow flow) (first (partition 5000 5000 nil data))))
+      (mod-thread-count (:name flow) dec))))
 
 (defn monitor
   [a]
@@ -108,20 +138,13 @@
     (if (and (> (- (System/currentTimeMillis) (:last-run flow))
                 (:interval flow))
              (= 0 (:thread-count flow)))
-      (send-off (agent 0) initialize-flow flow)))
-    (send-off *agent* monitor))
+      (send (agent 0) initialize-flow flow)))
+  (Thread/sleep 5000)
+  (send *agent* monitor))
       
-(comment
-  (defn -main
-  []
-  (register-flow :test-flow 0 #(get-file-from-dir "/tmp/openedix/clojure/in/") test-flow)
-  (send-off (agent 0) monitor))
-  )
-
-(defn process-chunk
-  [chunk]
-  (doall (map #(process-single-flow test-flow %) chunk)))
-
 (defn -main
   []
-  (doall (map process-chunk (partition 5000 5000 nil (get-files-from-dir "/tmp/openedix/clojure/in/")))))
+  (log/info "Startup")
+  (register-flow :edi-flow 10000 #(get-files-from-dir "/tmp/openedix/in/edi/") edi-flow)
+  (register-flow :xml-flow 10000 #(get-files-from-dir "/tmp/openedix/in/xml/") xml-flow)
+  (send (agent 0) monitor))
